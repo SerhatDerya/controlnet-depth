@@ -20,8 +20,13 @@ ADD server.py .
 
 # Add your model weight files 
 # (in this case we have a python script)
+
+RUN mkdir -p /ckpt
+
 ADD download.py .
 RUN python3 download.py
+ADD midas midas
+
 
 
 # Add your custom app code, init() and inference()
