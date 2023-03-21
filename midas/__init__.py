@@ -5,10 +5,10 @@ import torch
 from einops import rearrange
 from .api import MiDaSInference
 
-model = MiDaSInference(model_type="dpt_hybrid").cuda()
+#model = MiDaSInference(model_type="dpt_hybrid").cuda()
 
 
-def apply_midas(input_image, a=np.pi * 2.0, bg_th=0.1):
+def apply_midas(input_image, a=np.pi * 2.0, bg_th=0.1, model=None):
     assert input_image.ndim == 3
     image_depth = input_image
     with torch.no_grad():

@@ -19,10 +19,10 @@ def init():
     global model
     global controlnet
     
-    controlnet = ControlNetModel.from_pretrained("lllyasviel/sd-controlnet-depth", torch_dtype=torch.float16)
-    model = StableDiffusionControlNetPipeline.from_pretrained(
-        "runwayml/stable-diffusion-v1-5", controlnet=controlnet, safety_checker=None, torch_dtype=torch.float16
-    )
+    #controlnet = ControlNetModel.from_pretrained("lllyasviel/sd-controlnet-depth", torch_dtype=torch.float16)
+   # model = StableDiffusionControlNetPipeline.from_pretrained(
+    #    "runwayml/stable-diffusion-v1-5", controlnet=controlnet, safety_checker=None, torch_dtype=torch.float16
+   # )
 
     # Midas
     global midas_model
@@ -47,16 +47,17 @@ def inference(model_inputs:dict) -> dict:
     if prompt == None:
         return {'message': "No prompt provided"}
     
-    image = Image.open(BytesIO(base64.b64decode(image_data))).convert("RGB") 
+    image = Image.open(BytesIO(base64.b64decode(image_data))).convert("RGB")  #cambiar
 
     # Run MiDAS
     with torch.no_grad():
         input_image = HWC3(np.array(image))
         detected_map, _ = apply_midas(resize_image(input_image, detect_resolution), model=midas_model)
         detected_map = HWC3(detected_map)
-    detected_map = Image.fromarray(detected_map)
+    depth_image = Image.fromarray(detected_map)
     
     buffered = BytesIO()
+
     depth_image.save(buffered,format="JPEG")
     depth_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
@@ -83,7 +84,7 @@ def inference(model_inputs:dict) -> dict:
 
 if __name__ == '__main__':
     init()
-    with open("input/room.jpg", "rb") as f:
+    with open("original.png", "rb") as f:
         img_bytes = f.read()
 
-    inference({"prompt": "tropical room"}, img_bytes, debug=True)
+    inference({"prompt": "tropical room"})
