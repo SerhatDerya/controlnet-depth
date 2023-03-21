@@ -4,7 +4,6 @@
 import torch
 from diffusers.utils import load_image
 from diffusers import UniPCMultistepScheduler, StableDiffusionControlNetPipeline, ControlNetModel
-from transformers import DPTForDepthEstimation, DPTFeatureExtractor
 
 def download_model():
     # do a dry run of loading the huggingface model, which will download weights
@@ -12,12 +11,9 @@ def download_model():
     model = StableDiffusionControlNetPipeline.from_pretrained(
         "runwayml/stable-diffusion-v1-5", controlnet=controlnet, safety_checker=None, torch_dtype=torch.float16
     )
-    # Midas
-    global dpt_model
-    global feature_extractor
-
-    feature_extractor  = DPTFeatureExtractor.from_pretrained("Intel/dpt-hybrid-midas")
-    dpt_model = DPTForDepthEstimation.from_pretrained("Intel/dpt-hybrid-midas", low_cpu_mem_usage=True)
+    
+    path = {"midas": ["ckpt/dpt_hybrid-midas-501f0c75.pt","https://huggingface.co/lllyasviel/ControlNet/resolve/main/annotator/ckpts/dpt_hybrid-midas-501f0c75.pt"]}
+    torch.hub.download_url_to_file(path["midas"][1], path["midas"][0])
 
 
 if __name__ == "__main__":

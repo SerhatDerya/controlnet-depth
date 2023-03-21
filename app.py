@@ -6,8 +6,12 @@ from PIL import Image
 from io import BytesIO
 from diffusers.utils import load_image
 from diffusers import UniPCMultistepScheduler, StableDiffusionControlNetPipeline, ControlNetModel
-from transformers import DPTForDepthEstimation, DPTFeatureExtractor
+from midas import apply_midas
+from midas.util import HWC3, resize_image
 import time
+
+from midas.api import MiDaSInference
+
 
 # Init is ran on server startup
 # Load your model to GPU as a global variable here using the variable name "model"
@@ -21,11 +25,8 @@ def init():
     )
 
     # Midas
-    global dpt_model
-    global feature_extractor
-
-    feature_extractor  = DPTFeatureExtractor.from_pretrained("Intel/dpt-hybrid-midas")
-    dpt_model = DPTForDepthEstimation.from_pretrained("Intel/dpt-hybrid-midas", low_cpu_mem_usage=True)
+    global midas_model
+    midas_model = MiDaSInference(model_type="dpt_hybrid").cuda()
 
 
 # Inference is ran for every server call
@@ -34,38 +35,27 @@ def inference(model_inputs:dict) -> dict:
     global model
     global controlnet
 
-    global dpt_model
-    global feature_extractor
-    
+    global midas_model
+
     # Parse out your arguments
     prompt = model_inputs.get('prompt', None)
     negative_prompt = model_inputs.get('negative_prompt', None)
     num_inference_steps = model_inputs.get('num_inference_steps', 20)
     image_data = model_inputs.get('image_data', None)
+    detect_resolution = model_inputs.get('detect_resolution', 384)
+    
     if prompt == None:
         return {'message': "No prompt provided"}
     
     image = Image.open(BytesIO(base64.b64decode(image_data))).convert("RGB") 
-    # Run DPT
-    inputs = feature_extractor(images = image, return_tensors="pt")
 
-
-    timestart = time.time()
+    # Run MiDAS
     with torch.no_grad():
-        outputs = dpt_model(**inputs)
-        predicted_depth = outputs.predicted_depth
-    print("Time taken for depth map: ", time.time() - timestart)
-
-    prediction = torch.nn.functional.interpolate(
-        predicted_depth.unsqueeze(1),
-        size=image.size[::-1],
-        mode="bicubic",
-        align_corners=False,
-    )
-
-    depth = prediction.squeeze().cpu().numpy()
-    depth_image = Image.fromarray((depth * 255 / np.max(depth)).astype(np.uint8)).convert("RGB")
-
+        input_image = HWC3(np.array(image))
+        detected_map, _ = apply_midas(resize_image(input_image, detect_resolution), model=midas_model)
+        detected_map = HWC3(detected_map)
+    detected_map = Image.fromarray(detected_map)
+    
     buffered = BytesIO()
     depth_image.save(buffered,format="JPEG")
     depth_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
@@ -77,7 +67,7 @@ def inference(model_inputs:dict) -> dict:
         prompt,
         depth_image,
         negative_prompt=negative_prompt,
-        num_inference_steps=20
+        num_inference_steps=int(num_inference_steps)
     )
 
     image = output.images[0]
