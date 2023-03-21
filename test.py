@@ -7,7 +7,7 @@ import base64
 from io import BytesIO
 from PIL import Image
 
-img_name = sys.argv[1:][0]
+img_name = "demo.jpg"
 with open(img_name, "rb") as f:
     bytes = f.read()
     encoded = base64.b64encode(bytes).decode('utf-8')
@@ -21,11 +21,11 @@ model_inputs = {
 
 res = requests.post('http://localhost:8000/', json = model_inputs)
 
-image_byte_string = res.json()["canny_base64"]
+image_byte_string = res.json()["depth_base64"]
 image_encoded = image_byte_string.encode('utf-8')
 image_bytes = BytesIO(base64.b64decode(image_encoded))
 image = Image.open(image_bytes)
-image.save("edge.jpg")
+image.save("depth.jpg")
 
 image_byte_string = res.json()["image_base64"]
 image_encoded = image_byte_string.encode('utf-8')
