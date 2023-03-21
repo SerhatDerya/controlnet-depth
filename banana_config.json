@@ -1,5 +1,5 @@
 {
-    "name": "ControlNet-canny",
+    "name": "ControlNet-Depth",
     "category": "Computer Vision",
     "example_input": {
         "prompt": "rihanna best quality, extremely detailed",
@@ -8,7 +8,7 @@
         "image_data": "<IMG_DATA_BASE64>"
     },
     "example_output": {
-      "canny_base64": "<IMG_DATA_BASE64>",
+      "depth_base64": "<IMG_DATA_BASE64>",
       "image_base64": "<IMG_DATA_BASE64>"
     },
     "version": "1"
