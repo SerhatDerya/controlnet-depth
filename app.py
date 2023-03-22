@@ -87,10 +87,3 @@ def inference(model_inputs:dict) -> dict:
         'depth_base64': depth_base64,
         'image_base64': image_base64
     }
-
-if __name__ == '__main__':
-    init()
-    with open("original.png", "rb") as f:
-        img_bytes = f.read()
-
-    inference({"prompt": "tropical room"})
