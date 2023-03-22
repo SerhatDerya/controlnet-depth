@@ -23,12 +23,13 @@ def init():
     model = StableDiffusionControlNetPipeline.from_pretrained(
         "runwayml/stable-diffusion-v1-5", controlnet=controlnet, safety_checker=None, torch_dtype=torch.float16
     )
+    print("Time to load controlnet: ", time.time() - timestart)
 
     # Midas
+    timestart = time.time()
     global midas_model
     midas_model = MiDaSInference(model_type="dpt_hybrid").cuda()
-    print("Time to load models: ", time.time() - timestart)
-
+    print("Time to load Midas: ", time.time() - timestart)
 
 # Inference is ran for every server call
 # Reference your preloaded global model variable here.
@@ -66,6 +67,7 @@ def inference(model_inputs:dict) -> dict:
     depth_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
     timestart = time.time()
+    
     model.scheduler = UniPCMultistepScheduler.from_config(model.scheduler.config)
     model.enable_model_cpu_offload()
     model.enable_xformers_memory_efficient_attention()
