@@ -1,14 +1,14 @@
-import cv2
 import torch
 import base64
 import numpy as np
 from PIL import Image
 from io import BytesIO
 from diffusers.utils import load_image
-from diffusers import UniPCMultistepScheduler, StableDiffusionControlNetPipeline, ControlNetModel
+from diffusers import DPMSolverMultistepScheduler, StableDiffusionControlNetPipeline, ControlNetModel
 from midas import apply_midas
 from midas.util import HWC3, resize_image
 import time
+from torch import autocast
 
 from midas.api import MiDaSInference
 
@@ -19,10 +19,13 @@ def init():
     global controlnet
     
     timestart = time.time()
-    controlnet = ControlNetModel.from_pretrained("lllyasviel/sd-controlnet-depth", torch_dtype=torch.float16)
+    controlnet = ControlNetModel.from_pretrained("lllyasviel/sd-controlnet-depth")
+    repo = "runwayml/stable-diffusion-v1-5"
+    scheduler = DPMSolverMultistepScheduler.from_pretrained(repo, subfolder="scheduler")
     model = StableDiffusionControlNetPipeline.from_pretrained(
-        "runwayml/stable-diffusion-v1-5", controlnet=controlnet, safety_checker=None, torch_dtype=torch.float16
-    )
+        repo, controlnet=controlnet, safety_checker=None, scheduler=scheduler, torch_dtype=torch.float16, revision="fp16"
+    ).to("cuda")
+
     print("Time to load controlnet: ", time.time() - timestart)
 
     # Midas
@@ -68,15 +71,18 @@ def inference(model_inputs:dict) -> dict:
 
     timestart = time.time()
     
-    model.scheduler = UniPCMultistepScheduler.from_config(model.scheduler.config)
-    model.enable_model_cpu_offload()
-    model.enable_xformers_memory_efficient_attention()
-    output = model(
-        prompt,
-        depth_image,
-        negative_prompt=negative_prompt,
-        num_inference_steps=int(num_inference_steps)
-    )
+    # -- Memory optimizations turned off for now --
+    #model.scheduler = UniPCMultistepScheduler.from_config(model.scheduler.config)
+    #model.enable_model_cpu_offload()
+    #model.enable_xformers_memory_efficient_attention()
+
+    with autocast("cuda"):
+        output = model(
+            prompt,
+            depth_image,
+            negative_prompt=negative_prompt,
+            num_inference_steps=int(num_inference_steps)
+        )
 
     image = output.images[0]
     buffered = BytesIO()

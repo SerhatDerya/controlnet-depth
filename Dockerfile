@@ -12,7 +12,6 @@ ADD requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 
 # Install Opencv and controlnet-aux
-RUN pip install -q opencv-contrib-python
 RUN pip install -q controlnet_aux
 
 # We add the banana boilerplate here
