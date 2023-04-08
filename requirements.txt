@@ -5,3 +5,4 @@ xformers==0.0.16
 accelerate
 triton==2.0.0.post1
 timm
+websockets==10.0
