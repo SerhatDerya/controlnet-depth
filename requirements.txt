@@ -6,3 +6,4 @@ accelerate
 triton==2.0.0.post1
 timm
 websockets==10.0
+potassium
